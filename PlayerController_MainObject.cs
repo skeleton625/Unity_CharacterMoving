@@ -8,39 +8,81 @@ public class PlayerController_MainObject : MonoBehaviour
      * SerializeField - private은 유지되면서 인스펙터 창에 표시되는 변수 값 변경이 가능
      * * 단 모든 변수가 인스펙터 창에 표시되는 것은 아님
      */
+        // 스피드 조정 변수들
     [SerializeField]
     /* 캐릭터의 이동 속도 */
     private float walkSpeed;
     [SerializeField]
+    /* 캐릭터의 달리기 속도 */
+    private float runSpeed;
+    /* 실제 플레이어가 이동하는 속도 */
+    private float applySpeed;
+    /* 달리는지 유무를 나타내는 변수 */
+    private bool isRun;
+
+        // 캐릭터 점프 변수들
+    [SerializeField]
+    /* 캐릭터의 점프 정도 */
+    private float jumpForce;
+    /* 땅에 붙어있는지 유무 */
+    private bool isGround;
+
+    // 캐릭터 앉기 변수들
+    [SerializeField]
+    /* 캐릭터의 앉은 후 Y 값 */
+    private float CrouchPosY;
+    [SerializeField]
+    /* 캐릭터가 앉는 속도 */
+    private float crouchSpeed;
+    /* 캐릭터의 앉기 전 Y 값 */
+    private float originPosY;
+    /* 실제 케릭터에게 적용된 Y 값 */
+    private float applyCrouchPosY;
+    private bool isCrouch;  /* 앉아 있는지 유무 */
+
+    // 마우스 입력에 의한 변수들
+    [SerializeField]
     /* 캐릭터의 마우스 민감도 */
     private float lookSensitivity;
-
     [SerializeField]
     /* 캐릭터 화면 회전 제한 (너무 많은 각도로 회전하지 않게 하기 위함) */
     private float cameraRotationLimit;
     /* 캐릭터 화면 가로 축의 현재 회전 각도 */
     private float currentCameraRotationX = 0.0f;
 
+        // 컴포넌트, 게임 오브젝트 변수들
     [SerializeField]
     /* 
      * 캐릭터의 화면( 카메라 ) 객체 
      * 여러 개의 카메라 중, 특정 카메라만 선택하기 위해 인스펙터 창에서 직접 넣어줄 것임
      */
     private Camera theCamera;
-
     /* 캐릭터의 물리적 몸체 - 충돌 영역 */
     private Rigidbody myRigid;
+    /* 캐릭터의 충돌 영역 */
+    private CapsuleCollider CharacterCollider;
 
     // Start is called before the first frame update
     void Start()
     {
-        /* Script가 넣어진 오브젝트의 컴포넌트들 중, Rigidbody를 가져옴 */
+        /* Script가 넣어진 오브젝트의 컴포넌트들 중, Temprate에 해당하는 컴포넌트들을 적용 */
+        CharacterCollider = GetComponent<CapsuleCollider>();
         myRigid = GetComponent<Rigidbody>();
+        /* 처음 시작했을 때의 초기 상태는 걷는 상태 */
+        applySpeed = walkSpeed;
     }
 
     // 매 프레임( 초당 60 프레임 )마다 실행되는 함수
     void Update()
     {
+        /* 캐릭터가 지면에 있는지 공중에 있는지 파악 */
+        SetIsGround();
+        /* 키 입력에 따른 캐릭터 점프 시도 */
+        TryJump();
+        /* 앉은 상태와 서 있는 상태 변경 시도 */
+        TryCrouch();
+        /* 키 입력에 따른 캐릭터 달리기 시도 */
+        TryRun();
         /* 캐릭터 전 후 좌 우 이동 */
         Move();
         /* 마우스 입력에 따른 플레이어 화면(카메라) 상 하 이동 */
@@ -121,5 +163,102 @@ public class PlayerController_MainObject : MonoBehaviour
          * Vector3 값을 Quaternion으로 변형
          */
         myRigid.MoveRotation(myRigid.rotation * Quaternion.Euler(_characterRotationY));
+    }
+
+    // 달리는 것을 시도하는 변수
+    private void TryRun()
+    {
+        /* 달리는 키를 눌렀을 경우, 달리기 시작 */
+        if (Input.GetKey(KeyCode.LeftShift))
+        {
+            Running();
+        }
+        /* 달리는 키를 땟을 경우, 달리기 종료 */
+        if (Input.GetKeyUp(KeyCode.LeftShift))
+        {
+            StopRunning();
+        }
+    }
+
+    private void TryJump()
+    {
+        Debug.Log(Input.GetKeyDown(KeyCode.Space) + " " + isGround);
+        if (Input.GetKeyDown(KeyCode.Space) && isGround)
+        {
+            Jump();
+        }
+    }
+
+    // 달리기를 적용하는 함수
+    private void Running()
+    {
+        /* 달리기 상태를 True로 변경 */
+        isRun = true;
+        /* 적용된 캐릭터 속도를 달리기로 변경 */
+        applySpeed = runSpeed;
+    }
+
+    // 달리기를 중지하는 함수
+    private void StopRunning()
+    {
+        isRun = false;
+        applySpeed = walkSpeed;
+    }
+
+    // 캐릭터가 점프하는 함수
+    private void Jump()
+    {
+        /* 
+         * Rigidbody.velocity : 해당 물체의 이동하는 속도
+         * trasnform.up : (0, 1, 0)
+         */
+        myRigid.velocity = transform.up * jumpForce;
+        isGround = false;
+    }
+
+    private void SetIsGround()
+    {
+        /*
+         * Physics.Rascast
+         *      주어진 특정 위치에서 주어진 다른 위치로 레이저를 쏨
+         *      해당 물체가 떠 있는지 떠 있지 않은지 알기 위함
+         * Collider의 bounds -> 충돌 영역(물체의 물리적 영역)의 범위
+         * bounds의 extents -> 그 범위의 반
+         * => 즉 캡슐의 반만큼 반사해 지면과 닿아 있는지 닿아 있지 않은지 파악 가능
+         * 하지만 정확 거리를 세울 경우, 대각선에 위치해 있을 때, 닿아 있지 않다고 측정할 수 있음
+         */
+        isGround = Physics.Raycast(transform.position, Vector3.down, CharacterCollider.bounds.extents.y);
+    }
+
+    // 앉기를 시도하는 함수
+    private void TryCrouch()
+    {
+        /* 키 입력을 통해 앉은 상태와 서 있는 상태를 변경 */
+        if (Input.GetKeyDown(KeyCode.LeftControl))
+        {
+            Crouch();
+        }
+    }
+
+    // 앉은 상태, 서 있는 상태 변경 함수
+    private void Crouch()
+    {
+        /* 앉은 상태의 변형 */
+        isCrouch = !isCrouch;
+        /* 앉아 있을 경우, 앉은 속도와 카메라 위치 변경 */
+        if (isCrouch)
+        {
+            applySpeed = crouchSpeed;
+            applyCrouchPosY = CrouchPosY;
+        }
+        /* 서 잇을 경우, 서 있는 속도(걷는 속도)와 카메라 위치 변경 */
+        else
+        {
+            applySpeed = walkSpeed;
+            applyCrouchPosY = originPosY;
+        }
+
+        /* 카메라의 지역 위치에서 Y 축 위치만 변경함 */
+        theCamera.transform.localPosition = new Vector3(theCamera.transform.localPosition.x, applyCrouchPosY, theCamera.transform.localPosition.z);
     }
 }
