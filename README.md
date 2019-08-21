@@ -45,3 +45,27 @@ Rigidbody 내 Constraints( 제한 사항들)에서 Rigidbody( 실질적 물체 )
 Collider가 없는 에셋 오브젝트의 경우 Capsule Collider를 적용하면 실제 중앙값과의 위치가 다르기 때문에
 
 조정이 필요함.
+
+## Coroutine 함수와 고간 함수 
+
+코루틴( Coroutine )
+	
+	Caller가 함수를 Call하고, 함수가 Caller에게 값 을 return하면서 종료하는 것에 더해 return하는
+
+	대신 suspend( 혹은 yield )하면 Caller가 나중에 resume하여 중단된 지점부터 실행을 이어갈 수
+
+	있다.
+
+	* Thread와 유사하지만 다름.
+
+	Thread : 비동기 방식 -> Thread 들이 동시에 작동 ( 정확하게 동시는 아니지만 )
+	
+	Coroutine : 동기화 방식 -> Coroutine은 동시에 발생하지 않음
+
+기존 앉기 방식은 카메라의 위치를 바로 앉는 상태로 변경하기 때문에 동작이 부드럽지 못함.
+
+그렇기 때문에 앉는 상태에서 서 있는 상태, 서 잇는 상태에서 앉은 상태로 변경하는데 부자연스러운 모습이
+
+보이게 됨.
+
+그렇기 때문에 코루틴 함수와 Mathf 객체의 Lerp 함수를 사용해 부드러운 카메라 이동을 구현함

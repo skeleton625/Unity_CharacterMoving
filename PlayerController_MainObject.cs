@@ -182,7 +182,6 @@ public class PlayerController_MainObject : MonoBehaviour
 
     private void TryJump()
     {
-        Debug.Log(Input.GetKeyDown(KeyCode.Space) + " " + isGround);
         if (Input.GetKeyDown(KeyCode.Space) && isGround)
         {
             Jump();
@@ -208,6 +207,9 @@ public class PlayerController_MainObject : MonoBehaviour
     // 캐릭터가 점프하는 함수
     private void Jump()
     {
+        /* 점프할 때 캐릭터가 앉아 있을 경우 서 있는 상태로 변경 */
+        if (isCrouch)
+            Crouch();
         /* 
          * Rigidbody.velocity : 해당 물체의 이동하는 속도
          * trasnform.up : (0, 1, 0)
@@ -258,7 +260,43 @@ public class PlayerController_MainObject : MonoBehaviour
             applyCrouchPosY = originPosY;
         }
 
-        /* 카메라의 지역 위치에서 Y 축 위치만 변경함 */
-        theCamera.transform.localPosition = new Vector3(theCamera.transform.localPosition.x, applyCrouchPosY, theCamera.transform.localPosition.z);
+        /* 
+         * 카메라의 지역 위치에서 Y 축 위치만 변경함 
+         * -> 자연스러운 카메라 이동을 위해 코루틴 함수로 변경
+         */
+        StartCoroutine(CrouchCoroutine());
+    }
+
+    // 앉을 때 부드러운 카메라 처리를 위한 코루틴 함수
+    private IEnumerator CrouchCoroutine()
+    {
+        int cnt = 0;
+        float _posY = theCamera.transform.localPosition.y;
+
+        while (true)
+        {
+            /* 
+             * 곡선 이동을 위한 함수 정의
+             * 시작 값부터 목적 값가지 특정한 비율로 증가, 감소함
+             */
+            _posY = Mathf.Lerp(_posY, applyCrouchPosY, 0.3f);
+            /* 프레임 횟수 증가 */
+            cnt++;
+            /* 고간 이동이 특정 프레임동안 지속된 이후 반복문 종료 */
+            if (cnt > 15) break;
+            /* 
+             * 카메라 위치 이동 
+             * x, z 축 위치는 변함이 없으므로 0으로 입력
+             */
+            theCamera.transform.localPosition = new Vector3(0, _posY, 0);
+            /* 한 프레임 대기(대기시간 없음) -> 매 프레임마다 위 과정을 실행 */
+            yield return null;
+        }
+
+        /* 
+         * 특정 프레임이 지나면 목적 위치로 이동하도록 정의
+         * 기존 이동은 정확한 위치에 도달하지 못하기 때문에 그것을 보완하기 위함
+         */
+        theCamera.transform.localPosition = new Vector3(0, applyCrouchPosY, 0);
     }
 }
