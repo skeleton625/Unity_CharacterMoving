@@ -116,7 +116,7 @@ public class PlayerController_MainObject : MonoBehaviour
          * 표준화된 값에 캐릭터 속도를 곱함
          * => 캐릭터의 이동 속도
          */
-        Vector3 _velocity = (_moveHorizontal + _moveVertical).normalized * walkSpeed;
+        Vector3 _velocity = (_moveHorizontal + _moveVertical).normalized * applySpeed;
 
         /* 
          * Time.deltaTime -> 1 프레임의 대략적인 시간
@@ -229,7 +229,7 @@ public class PlayerController_MainObject : MonoBehaviour
          * => 즉 캡슐의 반만큼 반사해 지면과 닿아 있는지 닿아 있지 않은지 파악 가능
          * 하지만 정확 거리를 세울 경우, 대각선에 위치해 있을 때, 닿아 있지 않다고 측정할 수 있음
          */
-        isGround = Physics.Raycast(transform.position, Vector3.down, CharacterCollider.bounds.extents.y);
+        isGround = Physics.Raycast(transform.position, Vector3.down, CharacterCollider.bounds.extents.y+0.1f);
     }
 
     // 앉기를 시도하는 함수
