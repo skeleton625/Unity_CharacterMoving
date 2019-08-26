@@ -38,7 +38,7 @@ public class PlayerController_MainObject : MonoBehaviour
     private float originPosY;
     /* 실제 케릭터에게 적용된 Y 값 */
     private float applyCrouchPosY;
-    private bool isCrouch;  /* 앉아 있는지 유무 */
+    private bool isCrouch = false;  /* 앉아 있는지 유무 */
 
     // 마우스 입력에 의한 변수들
     [SerializeField]
@@ -70,6 +70,7 @@ public class PlayerController_MainObject : MonoBehaviour
         myRigid = GetComponent<Rigidbody>();
         /* 처음 시작했을 때의 초기 상태는 걷는 상태 */
         applySpeed = walkSpeed;
+        originPosY = theCamera.transform.localPosition.y;
     }
 
     // 매 프레임( 초당 60 프레임 )마다 실행되는 함수
@@ -188,6 +189,16 @@ public class PlayerController_MainObject : MonoBehaviour
         }
     }
 
+    // 앉기를 시도하는 함수
+    private void TryCrouch()
+    {
+        /* 키 입력을 통해 앉은 상태와 서 있는 상태를 변경 */
+        if (Input.GetKeyDown(KeyCode.LeftControl))
+        {
+            Crouch();
+        }
+    }
+
     // 달리기를 적용하는 함수
     private void Running()
     {
@@ -232,21 +243,12 @@ public class PlayerController_MainObject : MonoBehaviour
         isGround = Physics.Raycast(transform.position, Vector3.down, CharacterCollider.bounds.extents.y+0.1f);
     }
 
-    // 앉기를 시도하는 함수
-    private void TryCrouch()
-    {
-        /* 키 입력을 통해 앉은 상태와 서 있는 상태를 변경 */
-        if (Input.GetKeyDown(KeyCode.LeftControl))
-        {
-            Crouch();
-        }
-    }
-
     // 앉은 상태, 서 있는 상태 변경 함수
     private void Crouch()
     {
         /* 앉은 상태의 변형 */
         isCrouch = !isCrouch;
+        Debug.Log(isCrouch);
         /* 앉아 있을 경우, 앉은 속도와 카메라 위치 변경 */
         if (isCrouch)
         {
@@ -275,6 +277,7 @@ public class PlayerController_MainObject : MonoBehaviour
 
         while (true)
         {
+            Debug.Log(_posY);
             /* 
              * 곡선 이동을 위한 함수 정의
              * 시작 값부터 목적 값가지 특정한 비율로 증가, 감소함
