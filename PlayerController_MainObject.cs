@@ -61,6 +61,7 @@ public class PlayerController_MainObject : MonoBehaviour
     private Rigidbody myRigid;
     /* 캐릭터의 충돌 영역 */
     private CapsuleCollider CharacterCollider;
+    private GunController theGunController;
 
     // Start is called before the first frame update
     void Start()
@@ -71,6 +72,7 @@ public class PlayerController_MainObject : MonoBehaviour
         /* 처음 시작했을 때의 초기 상태는 걷는 상태 */
         applySpeed = walkSpeed;
         originPosY = theCamera.transform.localPosition.y;
+        theGunController = FindObjectOfType<GunController>();
     }
 
     // 매 프레임( 초당 60 프레임 )마다 실행되는 함수
@@ -202,6 +204,13 @@ public class PlayerController_MainObject : MonoBehaviour
     // 달리기를 적용하는 함수
     private void Running()
     {
+        /* 앉은 상태에서 달리려 할 경우, 앉은 상태게 해제됨 */
+        if(isCrouch)
+            Crouch();
+
+        /* 정조준 상태일 경우, 정조준 상태를 해제함 */
+        theGunController.CancelFineSight();
+
         /* 달리기 상태를 True로 변경 */
         isRun = true;
         /* 적용된 캐릭터 속도를 달리기로 변경 */
