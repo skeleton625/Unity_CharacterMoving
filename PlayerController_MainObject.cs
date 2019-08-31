@@ -12,6 +12,8 @@ public class PlayerController_MainObject : MonoBehaviour
     [SerializeField]
     /* 캐릭터의 이동 속도 */
     private float walkSpeed;
+    /* 캐릭터가 이동하고 있는지 유무 */
+    private bool isWalk;
     [SerializeField]
     /* 캐릭터의 달리기 속도 */
     private float runSpeed;
@@ -27,7 +29,7 @@ public class PlayerController_MainObject : MonoBehaviour
     /* 땅에 붙어있는지 유무 */
     private bool isGround;
 
-    // 캐릭터 앉기 변수들
+        // 캐릭터 앉기 변수들
     [SerializeField]
     /* 캐릭터의 앉은 후 Y 값 */
     private float CrouchPosY;
@@ -38,9 +40,10 @@ public class PlayerController_MainObject : MonoBehaviour
     private float originPosY;
     /* 실제 케릭터에게 적용된 Y 값 */
     private float applyCrouchPosY;
-    private bool isCrouch = false;  /* 앉아 있는지 유무 */
+    /* 앉아 있는지 유무 */
+    private bool isCrouch = false;
 
-    // 마우스 입력에 의한 변수들
+        // 마우스 입력에 의한 변수들
     [SerializeField]
     /* 캐릭터의 마우스 민감도 */
     private float lookSensitivity;
@@ -50,18 +53,23 @@ public class PlayerController_MainObject : MonoBehaviour
     /* 캐릭터 화면 가로 축의 현재 회전 각도 */
     private float currentCameraRotationX = 0.0f;
 
-        // 컴포넌트, 게임 오브젝트 변수들
-    [SerializeField]
     /* 
      * 캐릭터의 화면( 카메라 ) 객체 
      * 여러 개의 카메라 중, 특정 카메라만 선택하기 위해 인스펙터 창에서 직접 넣어줄 것임
      */
+        // 컴포넌트, 게임 오브젝트 변수들
+    [SerializeField]
     private Camera theCamera;
     /* 캐릭터의 물리적 몸체 - 충돌 영역 */
     private Rigidbody myRigid;
     /* 캐릭터의 충돌 영역 */
     private CapsuleCollider CharacterCollider;
     private GunController theGunController;
+    /* HUD의 크로스 헤어 객체 */
+    private CrossHair theCrossHair;
+
+    /* 플레이어의 이전 마지막 위치 변수 */
+    private Vector3 lastPos;
 
     // Start is called before the first frame update
     void Start()
@@ -69,10 +77,13 @@ public class PlayerController_MainObject : MonoBehaviour
         /* Script가 넣어진 오브젝트의 컴포넌트들 중, Temprate에 해당하는 컴포넌트들을 적용 */
         CharacterCollider = GetComponent<CapsuleCollider>();
         myRigid = GetComponent<Rigidbody>();
-        /* 처음 시작했을 때의 초기 상태는 걷는 상태 */
+        theGunController = FindObjectOfType<GunController>();
+        theCrossHair = FindObjectOfType<CrossHair>();
+
+        /* 각 변수들의 초기화 */
         applySpeed = walkSpeed;
         originPosY = theCamera.transform.localPosition.y;
-        theGunController = FindObjectOfType<GunController>();
+        applyCrouchPosY = originPosY;
     }
 
     // 매 프레임( 초당 60 프레임 )마다 실행되는 함수
@@ -88,6 +99,8 @@ public class PlayerController_MainObject : MonoBehaviour
         TryRun();
         /* 캐릭터 전 후 좌 우 이동 */
         Move();
+        /* 이동 여부 파악 */
+        MoveCheck();
         /* 마우스 입력에 따른 플레이어 화면(카메라) 상 하 이동 */
         CameraRotation();
         /* 마우스 입력에 따른 캐릭터, 카메라 좌 우 회전 */
@@ -126,6 +139,30 @@ public class PlayerController_MainObject : MonoBehaviour
          * 1초( 60 프레임 )동안 _velocity 만큼의 위치를 이동하게 됨
          */
         myRigid.MovePosition(transform.position + _velocity * Time.deltaTime);
+    }
+
+    private void MoveCheck()
+    {
+        /* 달리기, 앉기, 점프한 상태를 제외하고 확인 */
+        if(!isRun && !isCrouch && !isGround)
+        {
+            /* 위치 변동이 있을 경우 걷는 상태(뛰거나) */
+            /*
+             * Vector3.Distance 함수 : 매개변수간의 거리를 측정
+             * 조금만 차이가 나도 움직이는 것으로 판단할 수 있기 때문에 약간의 오차를 둠
+             * 이유는 모르겠지만 이전 조건문에선 isWalk 값이 계속해서 변하는 문제가 있음
+             */
+            //if (Vector3.Distance(lastPos, transform.position) >= 0.01f)
+            if(Input.GetAxisRaw("Vertical") != 0 || Input.GetAxisRaw("Horizontal") != 0)
+                isWalk = true;
+            /* 위치 변동이 없을 경우 가만히 있는 상태 */
+            else
+                isWalk = false;
+            /* 크로스 헤어에 상태 적용  */
+            theCrossHair.WalkingAnimation(isWalk);
+            /* 마지막 위치 변경 */
+            lastPos = transform.position;
+        }
     }
 
     /* 상하 카메라 이동 */
@@ -213,6 +250,8 @@ public class PlayerController_MainObject : MonoBehaviour
 
         /* 달리기 상태를 True로 변경 */
         isRun = true;
+        /* 크로스헤어에 상태 적용 */
+        theCrossHair.RunningAnimation(isRun);
         /* 적용된 캐릭터 속도를 달리기로 변경 */
         applySpeed = runSpeed;
     }
@@ -221,6 +260,8 @@ public class PlayerController_MainObject : MonoBehaviour
     private void StopRunning()
     {
         isRun = false;
+        /* 크로스 헤어에 상태 적용  */
+        theCrossHair.RunningAnimation(isRun);
         applySpeed = walkSpeed;
     }
 
@@ -250,6 +291,8 @@ public class PlayerController_MainObject : MonoBehaviour
          * 하지만 정확 거리를 세울 경우, 대각선에 위치해 있을 때, 닿아 있지 않다고 측정할 수 있음
          */
         isGround = Physics.Raycast(transform.position, Vector3.down, CharacterCollider.bounds.extents.y+0.1f);
+        /* 점프할 때, 달리는 것과 같이 크로스 헤어를 변경해주기 위함 */
+        theCrossHair.RunningAnimation(!isGround);
     }
 
     // 앉은 상태, 서 있는 상태 변경 함수
@@ -257,6 +300,8 @@ public class PlayerController_MainObject : MonoBehaviour
     {
         /* 앉은 상태의 변형 */
         isCrouch = !isCrouch;
+        /* 크로스 헤어에 상태 적용  */
+        theCrossHair.CrouchingAnimation(isCrouch);
         Debug.Log(isCrouch);
         /* 앉아 있을 경우, 앉은 속도와 카메라 위치 변경 */
         if (isCrouch)
