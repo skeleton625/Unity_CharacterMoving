@@ -144,7 +144,7 @@ public class PlayerController_MainObject : MonoBehaviour
     private void MoveCheck()
     {
         /* 달리기, 앉기, 점프한 상태를 제외하고 확인 */
-        if(!isRun && !isCrouch && !isGround)
+        if(!isRun && !isCrouch && isGround)
         {
             /* 위치 변동이 있을 경우 걷는 상태(뛰거나) */
             /*
