@@ -111,3 +111,9 @@ Raycast
 ## CrossHair
 
 	> HUD의 크로스 헤어가 캐릭터의 움직임에 따라 변경될 수 있도록 움직임 관련 함수를 수정
+
+## WeaponManager와 관련
+
+	> WeaponManager 스크립트와 관련해 HandController, PlayerController 스크립트를 수정함
+
+	> 자세한 사항은 Unity_Weapons 프로젝트에 위치

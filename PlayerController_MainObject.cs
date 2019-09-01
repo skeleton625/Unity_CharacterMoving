@@ -90,7 +90,7 @@ public class PlayerController_MainObject : MonoBehaviour
     void Update()
     {
         /* 캐릭터가 지면에 있는지 공중에 있는지 파악 */
-        SetIsGround();
+        IsGround();
         /* 키 입력에 따른 캐릭터 점프 시도 */
         TryJump();
         /* 앉은 상태와 서 있는 상태 변경 시도 */
@@ -158,6 +158,7 @@ public class PlayerController_MainObject : MonoBehaviour
             /* 위치 변동이 없을 경우 가만히 있는 상태 */
             else
                 isWalk = false;
+            Debug.Log(isWalk);
             /* 크로스 헤어에 상태 적용  */
             theCrossHair.WalkingAnimation(isWalk);
             /* 마지막 위치 변경 */
@@ -279,7 +280,7 @@ public class PlayerController_MainObject : MonoBehaviour
         isGround = false;
     }
 
-    private void SetIsGround()
+    private void IsGround()
     {
         /*
          * Physics.Rascast
@@ -292,7 +293,7 @@ public class PlayerController_MainObject : MonoBehaviour
          */
         isGround = Physics.Raycast(transform.position, Vector3.down, CharacterCollider.bounds.extents.y+0.1f);
         /* 점프할 때, 달리는 것과 같이 크로스 헤어를 변경해주기 위함 */
-        theCrossHair.RunningAnimation(!isGround);
+        theCrossHair.JumpingAnimation(!isGround);
     }
 
     // 앉은 상태, 서 있는 상태 변경 함수
@@ -331,7 +332,6 @@ public class PlayerController_MainObject : MonoBehaviour
 
         while (true)
         {
-            Debug.Log(_posY);
             /* 
              * 곡선 이동을 위한 함수 정의
              * 시작 값부터 목적 값가지 특정한 비율로 증가, 감소함
